@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product — H/77</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header class="header"><a class="logo" href="index.html">H/77</a><button class="menu-btn">☰</button>
+<nav class="nav"><a href="index.html">HOME</a><a href="shop.html">SHOP</a><a href="about.html">ABOUT</a><a href="contact.html">CONTACT</a><a href="cart.html">CART <span id="cartCount">0</span></a></nav></header>
+<main class="page"><div id="productDetail"></div></main>
+<footer><span>© 2026 H/77</span><span>MORE THAN A PIECE. A STATEMENT.</span></footer>
+<script src="products.js"></script><script src="app.js"></script>
+<script>
+const id=Number(new URLSearchParams(location.search).get('id'))||1;
+const p=PRODUCTS.find(x=>x.id===id)||PRODUCTS[0];
+document.getElementById('productDetail').innerHTML=`<div class="detail-grid"><div class="detail-image ${p.className}"><span>H/77</span></div><div class="detail-copy"><p class="eyebrow">DROP 01</p><h1>${p.name}</h1><p class="detail-sub">${p.sub}</p><div class="price">EGP ${p.price.toLocaleString()}</div><p>Premium everyday construction with a clean H/77 identity. Designed for a relaxed, modern silhouette.</p><div class="sizes"><button>S</button><button>M</button><button>L</button><button>XL</button></div><button class="btn" onclick="addToCart(${p.id})">ADD TO CART</button></div></div>`;
+</script></body></html>

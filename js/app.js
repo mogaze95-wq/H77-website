@@ -1,0 +1,10 @@
+function getCart(){return JSON.parse(localStorage.getItem('h77cart')||'[]')}
+function saveCart(c){localStorage.setItem('h77cart',JSON.stringify(c)); updateCount()}
+function updateCount(){const n=getCart().reduce((a,x)=>a+x.qty,0); document.querySelectorAll('#cartCount').forEach(e=>e.textContent=n)}
+function productCard(p){return `<article class="product-card"><a href="product.html?id=${p.id}"><div class="product-img ${p.className}"><span>H/77</span></div></a><div class="product-info"><div><h3>${p.name}</h3><p>${p.sub}</p></div><strong>EGP ${p.price.toLocaleString()}</strong></div><button class="add" onclick="addToCart(${p.id})">ADD TO CART</button></article>`}
+function renderProducts(id,limit){const el=document.getElementById(id);if(!el)return;let ps=limit?PRODUCTS.slice(0,limit):PRODUCTS;el.innerHTML=ps.map(productCard).join('')}
+function addToCart(id){let c=getCart(),item=c.find(x=>x.id===id);if(item)item.qty++;else c.push({id,qty:1});saveCart(c);alert('Added to cart.')}
+function renderCart(){const el=document.getElementById('cartItems');if(!el)return;let c=getCart();if(!c.length){el.innerHTML='<div class="empty"><h2>Your cart is empty.</h2><a class="btn" href="shop.html">SHOP DROP 01</a></div>';return}let total=0;el.innerHTML=c.map(x=>{let p=PRODUCTS.find(y=>y.id===x.id);total+=p.price*x.qty;return `<div class="cart-row"><div class="product-img mini ${p.className}"><span>H/77</span></div><div><h3>${p.name}</h3><p>${p.sub}</p></div><div>Qty: ${x.qty}</div><strong>EGP ${(p.price*x.qty).toLocaleString()}</strong><button onclick="removeItem(${p.id})">REMOVE</button></div>`}).join('')+`<div class="cart-total"><span>TOTAL</span><strong>EGP ${total.toLocaleString()}</strong></div><button class="btn" onclick="alert('Checkout demo — connect your payment/shipping system here.')">CHECKOUT</button>`}
+function removeItem(id){saveCart(getCart().filter(x=>x.id!==id));renderCart()}
+updateCount();renderProducts('featuredProducts',3);renderProducts('shopProducts');renderCart();
+document.querySelectorAll('.menu-btn').forEach(b=>b.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open')));
