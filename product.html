@@ -122,7 +122,23 @@
       });
     });
 
-    document.getElementById('addProduct').addEventListener('click', () => {
+   document.getElementById('addProduct').addEventListener('click', () => {
+  const message = document.getElementById('productMessage');
+
+  if (!hasPrice) {
+    message.textContent = 'Price coming soon.';
+    return;
+  }
+
+  if (!selectedSize) {
+    message.textContent = 'Please select a size.';
+    return;
+  }
+
+  addToCart(p.id, selectedColor, selectedSize);
+
+  message.textContent = 'Added to cart successfully.';
+});
       const message = document.getElementById('productMessage');
 
       if (!hasPrice) {
