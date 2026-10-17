@@ -3,30 +3,40 @@ const PRODUCTS = [
     id: 1,
     name: "H/77 Quarter-Zip",
     sub: "Oversized / Black · Charcoal · Burgundy",
-    className: "black"
+    className: "black",
+    price: null,
+    colors: ["Black", "Charcoal", "Burgundy"]
   },
   {
     id: 2,
     name: "H/77 Essential Hoodie",
     sub: "Oversized / Charcoal",
-    className: "charcoal"
+    className: "charcoal",
+    price: null,
+    colors: ["Charcoal"]
   },
   {
     id: 3,
     name: "H/77 Wide-Leg Sweatpants",
     sub: "Relaxed Fit / Black",
-    className: "black"
+    className: "black",
+    price: null,
+    colors: ["Black"]
   },
   {
     id: 4,
     name: "Coming Soon",
     sub: "A new H/77 piece",
-    className: "charcoal"
+    className: "charcoal",
+    price: null,
+    colors: []
   },
   {
     id: 5,
     name: "Coming Soon",
     sub: "A new H/77 piece",
-    className: "black"
+    className: "black",
+    price: null,
+    colors: []
   }
 ];
