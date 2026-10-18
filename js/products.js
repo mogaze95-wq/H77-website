@@ -10,18 +10,18 @@ const PRODUCTS = [
   {
     id: 2,
     name: "H/77 Essential Hoodie",
-    sub: "Oversized / Charcoal",
+    sub: "Oversized / Black · Charcoal · Burgundy",
     className: "charcoal",
     price: null,
-    colors: ["Charcoal"]
+    colors: ["Black", "Charcoal", "Burgundy"]
   },
   {
     id: 3,
     name: "H/77 Wide-Leg Sweatpants",
-    sub: "Relaxed Fit / Black",
+    sub: "Relaxed Fit / Black · Charcoal · Burgundy",
     className: "black",
     price: null,
-    colors: ["Black"]
+    colors: ["Black", "Charcoal", "Burgundy"]
   },
   {
     id: 4,
