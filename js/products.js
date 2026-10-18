@@ -12,7 +12,7 @@ const PRODUCTS = [
     name: "H/77 Essential Hoodie",
     sub: "Oversized / Black · Charcoal · Burgundy",
     className: "charcoal",
-    price: null,
+    price: 700,
     colors: ["Black", "Charcoal", "Burgundy"]
   },
   {
