@@ -1,159 +1,131 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Product — H/77</title>
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-  <header class="header">
-    <a class="logo" href="index.html">H/77</a>
-    <button class="menu-btn">☰</button>
-    <nav class="nav">
-      <a href="index.html">HOME</a>
-      <a href="shop.html">SHOP</a>
-      <a href="about.html">ABOUT</a>
-      <a href="contact.html">CONTACT</a>
-      <a href="cart.html">CART <span id="cartCount">0</span></a>
-    </nav>
-  </header>
+<script>
+  const id = Number(
+    new URLSearchParams(location.search).get('id')
+  ) || 1;
 
-  <main class="page">
-    <div id="productDetail"></div>
-  </main>
+  const p = PRODUCTS.find(x => x.id === id) || PRODUCTS[0];
+  const hasPrice =
+    Number.isFinite(p.price) && p.price >= 0;
 
-  <footer>
-    <span>© 2026 H/77</span>
-    <span>MORE THAN A PIECE. A STATEMENT.</span>
-  </footer>
+  const colors = (p.colors || []).map(color => ({
+    name: color,
+    value: color.toLowerCase()
+  }));
 
-  <script src="products.js"></script>
-  <script src="app.js"></script>
-  <script>
-    const id = Number(new URLSearchParams(location.search).get('id')) || 1;
-    const p = PRODUCTS.find(x => x.id === id) || PRODUCTS[0];
-    const hasPrice = Number.isFinite(p.price) && p.price >= 0;
+  let selectedColor = colors[0]?.name || '';
+  let selectedSize = '';
 
-    const colors = p.id === 1
-      ? [
-          { name: 'Black', value: 'black' },
-          { name: 'Charcoal', value: 'charcoal' },
-          { name: 'Burgundy', value: 'burgundy' }
-        ]
-      : (p.colors || []).map(color => ({
-          name: color,
-          value: color.toLowerCase()
-        }));
+  document.getElementById('productDetail').innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-image ${p.className}" id="detailImage">
+        <span>H/77</span>
+      </div>
 
-    let selectedColor = colors[0]?.name || '';
-    let selectedSize = '';
+      <div class="detail-copy">
+        <p class="eyebrow">DROP 01</p>
+        <h1>${p.name}</h1>
+        <p class="detail-sub">${p.sub}</p>
 
-    document.getElementById('productDetail').innerHTML = `
-      <div class="detail-grid">
-        <div class="detail-image ${p.className}" id="detailImage">
-          <span>H/77</span>
+        <div class="price">
+          ${hasPrice
+            ? `EGP ${p.price.toLocaleString('en-US')}`
+            : 'Price coming soon'}
         </div>
 
-        <div class="detail-copy">
-          <p class="eyebrow">DROP 01</p>
-          <h1>${p.name}</h1>
-          <p class="detail-sub">${p.sub}</p>
+        <p>Premium everyday construction with a clean H/77 identity. Designed for a relaxed, modern silhouette.</p>
 
-          <div class="price">
-            ${hasPrice ? `EGP ${p.price.toLocaleString('en-US')}` : 'Price coming soon'}
-          </div>
+        ${colors.length ? `
+          <p><strong>COLOR: <span id="selectedColor">${selectedColor}</span></strong></p>
 
-          <p>Premium everyday construction with a clean H/77 identity. Designed for a relaxed, modern silhouette.</p>
-
-          ${colors.length ? `
-            <p><strong>COLOR: <span id="selectedColor">${selectedColor}</span></strong></p>
-            <div class="sizes color-options">
-              ${colors.map((color, index) => `
-                <button type="button"
-                  class="color-option"
-                  data-color="${color.name}"
-                  aria-pressed="${index === 0}">
-                  ${color.name}
-                </button>
-              `).join('')}
-            </div>
-          ` : ''}
-
-          <p><strong>SELECT SIZE</strong></p>
-          <div class="sizes size-options">
-            ${['S', 'M', 'L', 'XL'].map(size => `
-              <button type="button" data-size="${size}" aria-pressed="false">
-                ${size}
+          <div class="sizes color-options">
+            ${colors.map((color, index) => `
+              <button
+                type="button"
+                class="color-option"
+                data-color="${color.name}"
+                aria-pressed="${index === 0}">
+                ${color.name}
               </button>
             `).join('')}
           </div>
+        ` : ''}
 
-          <button class="btn" id="addProduct" ${hasPrice ? '' : 'disabled'}>
-            ${hasPrice ? 'ADD TO CART' : 'COMING SOON'}
-          </button>
-          <p id="productMessage" aria-live="polite"></p>
+        <p><strong>SELECT SIZE</strong></p>
+
+        <div class="sizes size-options">
+          ${['S', 'M', 'L', 'XL'].map(size => `
+            <button
+              type="button"
+              data-size="${size}"
+              aria-pressed="false">
+              ${size}
+            </button>
+          `).join('')}
         </div>
+
+        <button class="btn" id="addProduct">
+          ${hasPrice ? 'ADD TO CART' : 'PRICE COMING SOON'}
+        </button>
+
+        <p id="productMessage" aria-live="polite"></p>
       </div>
-    `;
+    </div>
+  `;
 
-    document.querySelectorAll('[data-color]').forEach(button => {
-      button.addEventListener('click', () => {
-        selectedColor = button.dataset.color;
-        document.getElementById('selectedColor').textContent = selectedColor;
+  document.querySelectorAll('[data-color]').forEach(button => {
+    button.addEventListener('click', () => {
+      selectedColor = button.dataset.color;
 
-        document.querySelectorAll('[data-color]').forEach(option => {
-          option.setAttribute('aria-pressed', String(option === button));
-        });
+      document.getElementById('selectedColor').textContent =
+        selectedColor;
 
-        const image = document.getElementById('detailImage');
-        image.classList.remove('black', 'charcoal', 'burgundy');
-        image.classList.add(button.dataset.color.toLowerCase());
+      document.querySelectorAll('[data-color]').forEach(option => {
+        option.setAttribute(
+          'aria-pressed',
+          String(option === button)
+        );
+      });
+
+      const image = document.getElementById('detailImage');
+
+      image.classList.remove('black', 'charcoal', 'burgundy');
+      image.classList.add(selectedColor.toLowerCase());
+    });
+  });
+
+  document.querySelectorAll('[data-size]').forEach(button => {
+    button.addEventListener('click', () => {
+      selectedSize = button.dataset.size;
+
+      document.querySelectorAll('[data-size]').forEach(option => {
+        option.setAttribute(
+          'aria-pressed',
+          String(option === button)
+        );
       });
     });
+  });
 
-    document.querySelectorAll('[data-size]').forEach(button => {
-      button.addEventListener('click', () => {
-        selectedSize = button.dataset.size;
+  document.getElementById('addProduct').addEventListener('click', () => {
+    const message = document.getElementById('productMessage');
 
-        document.querySelectorAll('[data-size]').forEach(option => {
-          option.setAttribute('aria-pressed', String(option === button));
-        });
-      });
-    });
-
-   document.getElementById('addProduct').addEventListener('click', () => {
-  const message = document.getElementById('productMessage');
-
-  if (!hasPrice) {
-    message.textContent = 'Price coming soon.';
-    return;
-  }
-
-  if (!selectedSize) {
-    message.textContent = 'Please select a size.';
-    return;
-  }
-
-  addToCart(p.id, selectedColor, selectedSize);
-
-  message.textContent = 'Added to cart successfully.';
-});
-      const message = document.getElementById('productMessage');
-
-      if (!hasPrice) {
-        message.textContent = 'Price coming soon.';
-        return;
-      }
-
-      if (!selectedSize) {
-        message.textContent = 'Please select a size.';
-        return;
-      }
-
+    if (!hasPrice) {
       message.textContent =
-        'Size and color selected. Cart variant support must be added before checkout.';
-    });
-  </script>
-</body>
-</html>
+        'Price coming soon. Please check back later.';
+      return;
+    }
+
+    if (colors.length && !selectedColor) {
+      message.textContent = 'Please select a color.';
+      return;
+    }
+
+    if (!selectedSize) {
+      message.textContent = 'Please select a size.';
+      return;
+    }
+
+    addToCart(p.id, selectedColor, selectedSize);
+    message.textContent = 'Added to cart successfully.';
+  });
+</script>
