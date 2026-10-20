@@ -1,9 +1,10 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
+
     return res.status(405).json({
       success: false,
-      error: "Method not allowed",
+      error: "Method not allowed"
     });
   }
 
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
       product_name,
       color,
       size,
-      quantity,
+      quantity
     } = req.body || {};
 
     if (
@@ -31,51 +32,56 @@ export default async function handler(req, res) {
     ) {
       return res.status(400).json({
         success: false,
-        error: "Invalid order details",
+        error: "Invalid order details"
       });
     }
 
     if (
       customer_name.trim().length < 2 ||
       phone.trim().length < 7 ||
-      address.trim().length < 5
+      phone.trim().length > 30 ||
+      address.trim().length < 5 ||
+      customer_name.trim().length > 100 ||
+      address.trim().length > 500
     ) {
       return res.status(400).json({
         success: false,
-        error: "Please check your customer details",
+        error: "Please check your customer details"
       });
     }
 
+    // Only the currently approved product is available to purchase.
     if (
       product_name !== "H/77 Essential Hoodie" ||
       color !== "Charcoal" ||
-      !["S", "M", "L", "XL"].includes(size)
+      !["M", "L", "XL", "2XL"].includes(size)
     ) {
       return res.status(400).json({
         success: false,
-        error: "Product, color, or size is unavailable",
+        error: "Product, color, or size is unavailable"
       });
     }
 
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase server configuration.");
+
       return res.status(500).json({
         success: false,
-        error: "Server configuration is incomplete",
+        error: "Server configuration is incomplete"
       });
     }
 
     const response = await fetch(
-      `${supabaseUrl}/rest/v1/rpc/create_h77_order`,
+      `${supabaseUrl.replace(/\/+$/, "")}/rest/v1/rpc/create_h77_order`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
+          Authorization: `Bearer ${supabaseKey}`
         },
         body: JSON.stringify({
           p_customer_name: customer_name.trim(),
@@ -84,38 +90,55 @@ export default async function handler(req, res) {
           p_product_name: product_name,
           p_color: color,
           p_size: size,
-          p_quantity: quantity,
-        }),
+          p_quantity: quantity
+        })
       }
     );
 
-    const result = await response.json();
+    let result = null;
+
+    try {
+      result = await response.json();
+    } catch {
+      result = null;
+    }
 
     if (!response.ok) {
-      console.error("Supabase order request failed:", response.status);
+      console.error(
+        "Supabase order request failed:",
+        response.status
+      );
+
       return res.status(502).json({
         success: false,
-        error: "Could not save the order",
+        error: "Could not save the order"
       });
     }
 
-    if (!result || result.success !== true || !result.order_id) {
+    if (
+      !result ||
+      result.success !== true ||
+      !result.order_id
+    ) {
+      console.error("Supabase returned no valid order confirmation.");
+
       return res.status(502).json({
         success: false,
-        error: "Order confirmation failed",
+        error: "Order confirmation failed"
       });
     }
 
     return res.status(201).json({
       success: true,
-      order_id: result.order_id,
+      order_id: result.order_id
     });
+
   } catch (error) {
     console.error("Order API error:", error.message);
 
     return res.status(500).json({
       success: false,
-      error: "An unexpected server error occurred",
+      error: "An unexpected server error occurred"
     });
   }
 }
