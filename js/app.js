@@ -45,7 +45,6 @@ function productCard(product) {
           <span>H/77</span>
         </div>
       </a>
-
       <div class="product-info">
         <div>
           <h3>${product.name}</h3>
@@ -53,7 +52,6 @@ function productCard(product) {
         </div>
         <strong>${formatPrice(product.price)}</strong>
       </div>
-
       <a class="add" href="product.html?id=${product.id}">
         ${hasPrice ? "SELECT OPTIONS" : "VIEW PRODUCT"}
       </a>
@@ -65,10 +63,7 @@ function renderProducts(elementId, limit) {
   const element = document.getElementById(elementId);
   if (!element) return;
 
-  const products = limit
-    ? PRODUCTS.slice(0, limit)
-    : PRODUCTS;
-
+  const products = limit ? PRODUCTS.slice(0, limit) : PRODUCTS;
   element.innerHTML = products.map(productCard).join("");
 }
 
@@ -85,7 +80,7 @@ function addToCart(id, color = "", size = "") {
     return false;
   }
 
-  if (!product.colors.includes(color)) {
+  if (!(product.colors || []).includes(color)) {
     alert("Please select an available color.");
     return false;
   }
@@ -95,7 +90,6 @@ function addToCart(id, color = "", size = "") {
     return false;
   }
 
-  // Only the currently priced product can be purchased.
   if (
     product.name !== "H/77 Essential Hoodie" ||
     product.price !== 700 ||
@@ -118,7 +112,6 @@ function addToCart(id, color = "", size = "") {
       alert("Maximum quantity is 5 per item.");
       return false;
     }
-
     item.qty++;
   } else {
     cart.push({
@@ -132,7 +125,6 @@ function addToCart(id, color = "", size = "") {
   saveCart(cart);
   renderCart();
   alert("Added to cart.");
-
   return true;
 }
 
@@ -142,8 +134,6 @@ function renderCart() {
 
   const cart = getCart();
 
-  // Keep the original index so each REMOVE button targets
-  // the exact cart line, including its selected color and size.
   const lines = cart
     .map((item, index) => ({ item, index }))
     .filter(({ item }) =>
@@ -165,7 +155,7 @@ function renderCart() {
   let total = 0;
   let hasUnpricedItems = false;
 
-  element.innerHTML = lines.map(({ item, index }) => {
+  const rows = lines.map(({ item, index }) => {
     const product = getProduct(item.id);
     const hasPrice =
       Number.isFinite(product.price) && product.price > 0;
@@ -203,7 +193,9 @@ function renderCart() {
     `;
   }).join("");
 
-  element.innerHTML += `
+  element.innerHTML = `
+    ${rows}
+
     <div class="cart-total">
       <span>TOTAL</span>
       <strong>
@@ -216,6 +208,65 @@ function renderCart() {
     <button class="btn" id="checkoutButton" type="button">
       CHECKOUT
     </button>
+
+    <section id="checkoutFormWrap" hidden>
+      <div class="page-title">
+        <p class="eyebrow">ALMOST YOURS</p>
+        <h2>DELIVERY DETAILS</h2>
+        <p>Enter your details to place your order.</p>
+      </div>
+
+      <form id="checkoutForm">
+        <div class="form-field">
+          <label for="customerName">Full Name</label>
+          <input
+            id="customerName"
+            name="customer_name"
+            type="text"
+            placeholder="Enter your full name"
+            minlength="2"
+            maxlength="100"
+            autocomplete="name"
+            required
+          >
+        </div>
+
+        <div class="form-field">
+          <label for="customerPhone">Mobile Number</label>
+          <input
+            id="customerPhone"
+            name="phone"
+            type="tel"
+            placeholder="Enter your mobile number"
+            minlength="7"
+            maxlength="25"
+            autocomplete="tel"
+            inputmode="tel"
+            required
+          >
+        </div>
+
+        <div class="form-field">
+          <label for="customerAddress">Delivery Address</label>
+          <textarea
+            id="customerAddress"
+            name="address"
+            placeholder="Governorate, area, street, building and apartment"
+            minlength="5"
+            maxlength="500"
+            autocomplete="street-address"
+            rows="4"
+            required
+          ></textarea>
+        </div>
+
+        <p id="checkoutMessage" role="status" aria-live="polite"></p>
+
+        <button class="btn" id="placeOrderButton" type="submit">
+          PLACE ORDER
+        </button>
+      </form>
+    </section>
   `;
 
   element.querySelectorAll("[data-remove-index]").forEach(button => {
@@ -224,8 +275,28 @@ function renderCart() {
     });
   });
 
-  document.getElementById("checkoutButton")
-    ?.addEventListener("click", checkout);
+  const checkoutButton = document.getElementById("checkoutButton");
+  const formWrap = document.getElementById("checkoutFormWrap");
+  const form = document.getElementById("checkoutForm");
+
+  checkoutButton.addEventListener("click", () => {
+    // Do not let customers submit products without confirmed prices.
+    if (hasUnpricedItems) {
+      alert("Please remove products whose prices are not available yet.");
+      return;
+    }
+
+    formWrap.hidden = !formWrap.hidden;
+    checkoutButton.textContent = formWrap.hidden
+      ? "CHECKOUT"
+      : "CLOSE FORM";
+
+    if (!formWrap.hidden) {
+      formWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+
+  form.addEventListener("submit", checkout);
 }
 
 function removeCartIndex(index) {
@@ -240,15 +311,33 @@ function removeCartIndex(index) {
   renderCart();
 }
 
-async function checkout() {
+async function checkout(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const message = document.getElementById("checkoutMessage");
+  const button = document.getElementById("placeOrderButton");
+
+  const customerName = form.elements.customer_name.value.trim();
+  const phone = form.elements.phone.value.trim();
+  const address = form.elements.address.value.trim();
   const cart = getCart();
 
   if (!cart.length) {
-    alert("Your cart is empty.");
+    message.textContent = "Your cart is empty.";
     return;
   }
 
-  // Validate every item before sending any order.
+  if (
+    customerName.length < 2 ||
+    phone.length < 7 ||
+    address.length < 5
+  ) {
+    message.textContent = "Please check your name, phone and address.";
+    return;
+  }
+
+  // Only the currently approved product can be ordered.
   for (const item of cart) {
     const product = getProduct(item.id);
 
@@ -256,50 +345,22 @@ async function checkout() {
       !product ||
       !Number.isInteger(item.qty) ||
       item.qty < 1 ||
-      item.qty > 5
-    ) {
-      alert("Please review your cart and quantities.");
-      return;
-    }
-
-    if (
+      item.qty > 5 ||
       product.name !== "H/77 Essential Hoodie" ||
       product.price !== 700 ||
       item.color !== "Charcoal" ||
       !["M", "L", "XL", "2XL"].includes(item.size)
     ) {
-      alert(
-        "Only the H/77 Essential Hoodie in Charcoal, " +
-        "priced at EGP 700, is currently available. " +
-        "Please review your cart."
-      );
+      message.textContent =
+        "Please review your cart. Only the Charcoal Essential Hoodie " +
+        "priced at EGP 700 is currently available.";
       return;
     }
   }
 
-  const customerName = prompt("Enter your full name:");
-  if (customerName === null) return;
-
-  const phone = prompt("Enter your phone number:");
-  if (phone === null) return;
-
-  const address = prompt("Enter your full delivery address:");
-  if (address === null) return;
-
-  if (
-    customerName.trim().length < 2 ||
-    phone.trim().length < 7 ||
-    address.trim().length < 5
-  ) {
-    alert("Please enter a valid name, phone number and address.");
-    return;
-  }
-
-  const button = document.getElementById("checkoutButton");
-  if (button) {
-    button.disabled = true;
-    button.textContent = "PROCESSING...";
-  }
+  button.disabled = true;
+  button.textContent = "PROCESSING...";
+  message.textContent = "Submitting your order...";
 
   const submittedKeys = [];
   const orderIds = [];
@@ -317,9 +378,9 @@ async function checkout() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          customer_name: customerName.trim(),
-          phone: phone.trim(),
-          address: address.trim(),
+          customer_name: customerName,
+          phone,
+          address,
           product_name: product.name,
           color: item.color,
           size: item.size,
@@ -354,12 +415,11 @@ async function checkout() {
     renderCart();
 
     alert(
-      `Order placed successfully!\n` +
+      "Your order has been submitted successfully!\n" +
       `Order ID(s): ${orderIds.join(", ")}\n\n` +
       "Our team will contact you to confirm delivery."
     );
   } catch (error) {
-    // Remove confirmed lines only; preserve unconfirmed items.
     if (submittedKeys.length > 0) {
       const remaining = getCart().filter(item =>
         !submittedKeys.includes(cartKey(item))
@@ -371,28 +431,26 @@ async function checkout() {
 
     if (orderIds.length > 0) {
       alert(
-        `Some orders were saved successfully.\n` +
+        "Some items were saved as orders.\n" +
         `Order ID(s): ${orderIds.join(", ")}\n\n` +
-        "Check with us before resubmitting the remaining items.\n" +
-        `Error: ${error.message}`
+        "Please check with us before submitting again."
       );
     } else {
-      alert(
-        "We could not confirm your order. Your cart has been kept.\n\n" +
-        error.message
-      );
+      message.textContent =
+        "We couldn't confirm your order. Your cart has been kept. " +
+        error.message;
     }
   } finally {
-    const currentButton = document.getElementById("checkoutButton");
+    const currentButton = document.getElementById("placeOrderButton");
 
     if (currentButton) {
       currentButton.disabled = false;
-      currentButton.textContent = "CHECKOUT";
+      currentButton.textContent = "PLACE ORDER";
     }
   }
 }
 
-// Keep compatibility with any older page calling removeItem().
+// Compatibility with older pages that may use this function.
 function removeItem(id, color = "", size = "") {
   const cart = getCart();
 
