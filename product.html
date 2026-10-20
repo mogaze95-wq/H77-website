@@ -1,131 +1,219 @@
-<script>
-  const id = Number(
-    new URLSearchParams(location.search).get('id')
-  ) || 1;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  const p = PRODUCTS.find(x => x.id === id) || PRODUCTS[0];
-  const hasPrice =
-    Number.isFinite(p.price) && p.price >= 0;
+  <title>Product — H/77</title>
 
-  const colors = (p.colors || []).map(color => ({
-    name: color,
-    value: color.toLowerCase()
-  }));
+  <link rel="stylesheet" href="css/style.css">
+</head>
 
-  let selectedColor = colors[0]?.name || '';
-  let selectedSize = '';
+<body>
 
-  document.getElementById('productDetail').innerHTML = `
-    <div class="detail-grid">
-      <div class="detail-image ${p.className}" id="detailImage">
-        <span>H/77</span>
-      </div>
+  <header class="header">
+    <a class="logo" href="index.html">H/77</a>
 
-      <div class="detail-copy">
-        <p class="eyebrow">DROP 01</p>
-        <h1>${p.name}</h1>
-        <p class="detail-sub">${p.sub}</p>
+    <nav class="nav">
+      <a href="index.html">HOME</a>
+      <a href="shop.html">SHOP</a>
+      <a href="about.html">ABOUT</a>
+      <a href="contact.html">CONTACT</a>
+      <a href="cart.html">
+        CART (<span id="cartCount">0</span>)
+      </a>
+    </nav>
 
-        <div class="price">
-          ${hasPrice
-            ? `EGP ${p.price.toLocaleString('en-US')}`
-            : 'Price coming soon'}
-        </div>
+    <button class="menu-btn" type="button" aria-label="Open menu">
+      ☰
+    </button>
+  </header>
 
-        <p>Premium everyday construction with a clean H/77 identity. Designed for a relaxed, modern silhouette.</p>
-
-        ${colors.length ? `
-          <p><strong>COLOR: <span id="selectedColor">${selectedColor}</span></strong></p>
-
-          <div class="sizes color-options">
-            ${colors.map((color, index) => `
-              <button
-                type="button"
-                class="color-option"
-                data-color="${color.name}"
-                aria-pressed="${index === 0}">
-                ${color.name}
-              </button>
-            `).join('')}
-          </div>
-        ` : ''}
-
-        <p><strong>SELECT SIZE</strong></p>
-
-        <div class="sizes size-options">
-          ${['S', 'M', 'L', 'XL'].map(size => `
-            <button
-              type="button"
-              data-size="${size}"
-              aria-pressed="false">
-              ${size}
-            </button>
-          `).join('')}
-        </div>
-
-        <button class="btn" id="addProduct">
-          ${hasPrice ? 'ADD TO CART' : 'PRICE COMING SOON'}
-        </button>
-
-        <p id="productMessage" aria-live="polite"></p>
-      </div>
+  <main class="container">
+    <div id="productDetail">
+      <p>Loading product...</p>
     </div>
-  `;
+  </main>
 
-  document.querySelectorAll('[data-color]').forEach(button => {
-    button.addEventListener('click', () => {
-      selectedColor = button.dataset.color;
+  <footer class="footer">
+    <p>© 2026 H/77</p>
+    <p>More Than A Piece. A Statement.</p>
+  </footer>
 
-      document.getElementById('selectedColor').textContent =
-        selectedColor;
+  <!-- Load product data first -->
+  <script src="js/products.js"></script>
 
-      document.querySelectorAll('[data-color]').forEach(option => {
-        option.setAttribute(
-          'aria-pressed',
-          String(option === button)
-        );
-      });
+  <!-- Load cart and shared functions -->
+  <script src="js/app.js"></script>
 
-      const image = document.getElementById('detailImage');
+  <script>
+    (() => {
+      const container = document.getElementById('productDetail');
 
-      image.classList.remove('black', 'charcoal', 'burgundy');
-      image.classList.add(selectedColor.toLowerCase());
-    });
-  });
+      try {
+        if (!Array.isArray(PRODUCTS) || PRODUCTS.length === 0) {
+          throw new Error('Product data could not be loaded.');
+        }
 
-  document.querySelectorAll('[data-size]').forEach(button => {
-    button.addEventListener('click', () => {
-      selectedSize = button.dataset.size;
+        const params = new URLSearchParams(location.search);
+        const id = Number(params.get('id')) || 1;
 
-      document.querySelectorAll('[data-size]').forEach(option => {
-        option.setAttribute(
-          'aria-pressed',
-          String(option === button)
-        );
-      });
-    });
-  });
+        const p = PRODUCTS.find(item => item.id === id) || PRODUCTS[0];
 
-  document.getElementById('addProduct').addEventListener('click', () => {
-    const message = document.getElementById('productMessage');
+        const hasPrice =
+          Number.isFinite(p.price) && p.price >= 0;
 
-    if (!hasPrice) {
-      message.textContent =
-        'Price coming soon. Please check back later.';
-      return;
-    }
+        const colors = Array.isArray(p.colors) ? p.colors : [];
+        const sizes = ['S', 'M', 'L', 'XL'];
 
-    if (colors.length && !selectedColor) {
-      message.textContent = 'Please select a color.';
-      return;
-    }
+        let selectedColor = colors[0] || '';
+        let selectedSize = '';
 
-    if (!selectedSize) {
-      message.textContent = 'Please select a size.';
-      return;
-    }
+        container.innerHTML = `
+          <div class="detail-grid">
+            <div
+              class="detail-image ${p.className || 'black'}"
+              id="detailImage"
+            >
+              <span>H/77</span>
+            </div>
 
-    addToCart(p.id, selectedColor, selectedSize);
-    message.textContent = 'Added to cart successfully.';
-  });
-</script>
+            <div class="detail-copy">
+              <p class="eyebrow">DROP 01</p>
+
+              <h1>${p.name}</h1>
+
+              <p class="detail-sub">${p.sub || ''}</p>
+
+              <div class="price">
+                ${hasPrice
+                  ? `EGP ${p.price.toLocaleString('en-US')}`
+                  : 'Price coming soon'}
+              </div>
+
+              <p>
+                Premium everyday construction with a clean H/77 identity.
+                Designed for a relaxed, modern silhouette.
+              </p>
+
+              ${colors.length ? `
+                <p>
+                  <strong>
+                    COLOR: <span id="selectedColor">${selectedColor}</span>
+                  </strong>
+                </p>
+
+                <div class="sizes color-options">
+                  ${colors.map((color, index) => `
+                    <button
+                      type="button"
+                      class="color-option"
+                      data-color="${color}"
+                      aria-pressed="${index === 0}"
+                    >${color}</button>
+                  `).join('')}
+                </div>
+              ` : ''}
+
+              <p><strong>SELECT SIZE</strong></p>
+
+              <div class="sizes size-options">
+                ${sizes.map(size => `
+                  <button
+                    type="button"
+                    data-size="${size}"
+                    aria-pressed="false"
+                  >${size}</button>
+                `).join('')}
+              </div>
+
+              <button
+                class="btn"
+                type="button"
+                id="addProduct"
+                ${hasPrice ? '' : 'disabled'}
+              >
+                ${hasPrice ? 'ADD TO CART' : 'PRICE COMING SOON'}
+              </button>
+
+              <p id="productMessage" aria-live="polite"></p>
+            </div>
+          </div>
+        `;
+
+        container.querySelectorAll('[data-color]').forEach(button => {
+          button.addEventListener('click', () => {
+            selectedColor = button.dataset.color;
+
+            const label = document.getElementById('selectedColor');
+            if (label) label.textContent = selectedColor;
+
+            container.querySelectorAll('[data-color]').forEach(option => {
+              option.setAttribute(
+                'aria-pressed',
+                String(option === button)
+              );
+            });
+
+            const image = document.getElementById('detailImage');
+            image.classList.remove('black', 'charcoal', 'burgundy');
+            image.classList.add(selectedColor.toLowerCase());
+          });
+        });
+
+        container.querySelectorAll('[data-size]').forEach(button => {
+          button.addEventListener('click', () => {
+            selectedSize = button.dataset.size;
+
+            container.querySelectorAll('[data-size]').forEach(option => {
+              option.setAttribute(
+                'aria-pressed',
+                String(option === button)
+              );
+            });
+          });
+        });
+
+        document.getElementById('addProduct').addEventListener('click', () => {
+          const message = document.getElementById('productMessage');
+
+          if (!hasPrice) {
+            message.textContent = 'Price coming soon.';
+            return;
+          }
+
+          if (colors.length && !selectedColor) {
+            message.textContent = 'Please select a color.';
+            return;
+          }
+
+          if (!selectedSize) {
+            message.textContent = 'Please select a size.';
+            return;
+          }
+
+          if (typeof addToCart !== 'function') {
+            message.textContent =
+              'Cart functions did not load. Please refresh the page.';
+            return;
+          }
+
+          addToCart(p.id, selectedColor, selectedSize);
+        });
+
+      } catch (error) {
+        console.error('H/77 product page error:', error);
+
+        container.innerHTML = `
+          <div class="empty">
+            <h2>Unable to load this product.</h2>
+            <p>Please return to the shop and try again.</p>
+            <a class="btn" href="shop.html">BACK TO SHOP</a>
+          </div>
+        `;
+      }
+    })();
+  </script>
+
+</body>
+</html>
