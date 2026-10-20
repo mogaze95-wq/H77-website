@@ -13,7 +13,7 @@ const PRODUCTS = [
     sub: "Oversized / Charcoal",
     className: "charcoal",
     price: 700,
-    colors: ["Charcoal"]
+    colors: ["Black", "Charcoal", "Burgundy"]
   },
   {
     id: 3,
