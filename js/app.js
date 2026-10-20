@@ -1,6 +1,6 @@
 function getCart() {
   try {
-    const cart = JSON.parse(localStorage.getItem('h77cart') || '[]');
+    const cart = JSON.parse(localStorage.getItem("h77cart") || "[]");
     return Array.isArray(cart) ? cart : [];
   } catch {
     return [];
@@ -8,7 +8,7 @@ function getCart() {
 }
 
 function saveCart(cart) {
-  localStorage.setItem('h77cart', JSON.stringify(cart));
+  localStorage.setItem("h77cart", JSON.stringify(cart));
   updateCount();
 }
 
@@ -19,7 +19,7 @@ function updateCount() {
     );
   }, 0);
 
-  document.querySelectorAll('#cartCount').forEach(el => {
+  document.querySelectorAll("#cartCount").forEach(el => {
     el.textContent = count;
   });
 }
@@ -29,14 +29,14 @@ function getProduct(id) {
 }
 
 function formatPrice(price) {
-  return Number.isFinite(price) && price >= 0
-    ? `EGP ${price.toLocaleString('en-US')}`
-    : 'Price coming soon';
+  return Number.isFinite(price) && price > 0
+    ? `EGP ${price.toLocaleString("en-US")}`
+    : "Price coming soon";
 }
 
 function productCard(product) {
   const hasPrice =
-    Number.isFinite(product.price) && product.price >= 0;
+    Number.isFinite(product.price) && product.price > 0;
 
   return `
     <article class="product-card">
@@ -55,7 +55,7 @@ function productCard(product) {
       </div>
 
       <a class="add" href="product.html?id=${product.id}">
-        ${hasPrice ? 'SELECT OPTIONS' : 'VIEW PRODUCT'}
+        ${hasPrice ? "SELECT OPTIONS" : "VIEW PRODUCT"}
       </a>
     </article>
   `;
@@ -69,35 +69,54 @@ function renderProducts(elementId, limit) {
     ? PRODUCTS.slice(0, limit)
     : PRODUCTS;
 
-  element.innerHTML = products.map(productCard).join('');
+  element.innerHTML = products.map(productCard).join("");
 }
 
-function addToCart(id, color = '', size = '') {
+function addToCart(id, color = "", size = "") {
   const product = getProduct(id);
-  if (!product) return;
 
-  if (!Number.isFinite(product.price) || product.price < 0) {
-    alert('Price coming soon.');
-    return;
+  if (!product) {
+    alert("Product not found.");
+    return false;
   }
 
-  if (!size) {
-    alert('Please select a size.');
-    return;
+  if (!Number.isFinite(product.price) || product.price <= 0) {
+    alert("Price coming soon.");
+    return false;
+  }
+
+  if (!product.colors.includes(color)) {
+    alert("Please select an available color.");
+    return false;
+  }
+
+  if (!["M", "L", "XL", "2XL"].includes(size)) {
+    alert("Please select a valid size.");
+    return false;
+  }
+
+  // Only the currently priced product can be purchased.
+  if (
+    product.name !== "H/77 Essential Hoodie" ||
+    product.price !== 700 ||
+    color !== "Charcoal"
+  ) {
+    alert("This product is not available for checkout yet.");
+    return false;
   }
 
   const cart = getCart();
 
   const item = cart.find(entry =>
     entry.id === product.id &&
-    (entry.color || '') === color &&
-    (entry.size || '') === size
+    (entry.color || "") === color &&
+    (entry.size || "") === size
   );
 
   if (item) {
     if (item.qty >= 5) {
-      alert('Maximum quantity is 5 per item.');
-      return;
+      alert("Maximum quantity is 5 per item.");
+      return false;
     }
 
     item.qty++;
@@ -112,20 +131,28 @@ function addToCart(id, color = '', size = '') {
 
   saveCart(cart);
   renderCart();
-  alert('Added to cart.');
+  alert("Added to cart.");
+
+  return true;
 }
 
 function renderCart() {
-  const element = document.getElementById('cartItems');
+  const element = document.getElementById("cartItems");
   if (!element) return;
 
-  const cart = getCart().filter(item =>
-    getProduct(item.id) &&
-    Number.isInteger(item.qty) &&
-    item.qty > 0
-  );
+  const cart = getCart();
 
-  if (!cart.length) {
+  // Keep the original index so each REMOVE button targets
+  // the exact cart line, including its selected color and size.
+  const lines = cart
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) =>
+      getProduct(item.id) &&
+      Number.isInteger(item.qty) &&
+      item.qty > 0
+    );
+
+  if (!lines.length) {
     element.innerHTML = `
       <div class="empty">
         <h2>Your cart is empty.</h2>
@@ -138,13 +165,13 @@ function renderCart() {
   let total = 0;
   let hasUnpricedItems = false;
 
-  element.innerHTML = cart.map(item => {
+  element.innerHTML = lines.map(({ item, index }) => {
     const product = getProduct(item.id);
-    const price = product.price;
-    const hasPrice = Number.isFinite(price) && price >= 0;
+    const hasPrice =
+      Number.isFinite(product.price) && product.price > 0;
 
     if (hasPrice) {
-      total += price * item.qty;
+      total += product.price * item.qty;
     } else {
       hasUnpricedItems = true;
     }
@@ -157,52 +184,71 @@ function renderCart() {
 
         <div>
           <h3>${product.name}</h3>
-          <p>Color: ${item.color || 'Not selected'}</p>
-          <p>Size: ${item.size || 'Not selected'}</p>
+          <p>Color: ${item.color || "Not selected"}</p>
+          <p>Size: ${item.size || "Not selected"}</p>
         </div>
 
         <div>Qty: ${item.qty}</div>
 
         <strong>
           ${hasPrice
-            ? formatPrice(price * item.qty)
-            : 'Price coming soon'}
+            ? formatPrice(product.price * item.qty)
+            : "Price coming soon"}
         </strong>
 
-        <button onclick="removeItem(
-          ${product.id},
-          ${JSON.stringify(item.color || '')},
-          ${JSON.stringify(item.size || '')}
-        )">REMOVE</button>
+        <button type="button" data-remove-index="${index}">
+          REMOVE
+        </button>
       </div>
     `;
-  }).join('');
+  }).join("");
 
   element.innerHTML += `
     <div class="cart-total">
       <span>TOTAL</span>
       <strong>
         ${hasUnpricedItems
-          ? 'Pending price confirmation'
+          ? "Pending price confirmation"
           : formatPrice(total)}
       </strong>
     </div>
 
-    <button class="btn" id="checkoutButton" onclick="checkout()">
+    <button class="btn" id="checkoutButton" type="button">
       CHECKOUT
     </button>
   `;
+
+  element.querySelectorAll("[data-remove-index]").forEach(button => {
+    button.addEventListener("click", () => {
+      removeCartIndex(Number(button.dataset.removeIndex));
+    });
+  });
+
+  document.getElementById("checkoutButton")
+    ?.addEventListener("click", checkout);
+}
+
+function removeCartIndex(index) {
+  const cart = getCart();
+
+  if (!Number.isInteger(index) || index < 0 || index >= cart.length) {
+    return;
+  }
+
+  cart.splice(index, 1);
+  saveCart(cart);
+  renderCart();
 }
 
 async function checkout() {
   const cart = getCart();
 
   if (!cart.length) {
-    alert('Your cart is empty.');
+    alert("Your cart is empty.");
     return;
   }
 
-  // Validate the entire cart before sending any orders.
+  // Validate every item before sending any order.
   for (const item of cart) {
     const product = getProduct(item.id);
 
@@ -212,34 +258,32 @@ async function checkout() {
       item.qty < 1 ||
       item.qty > 5
     ) {
-      alert('Please review your cart. Quantity must be between 1 and 5.');
+      alert("Please review your cart and quantities.");
       return;
     }
 
     if (
-      product.name !== 'H/77 Essential Hoodie' ||
-      item.color !== 'Charcoal' ||
-      !['S', 'M', 'L', 'XL'].includes(item.size)
+      product.name !== "H/77 Essential Hoodie" ||
+      product.price !== 700 ||
+      item.color !== "Charcoal" ||
+      !["M", "L", "XL", "2XL"].includes(item.size)
     ) {
       alert(
-        'Currently, only the H/77 Essential Hoodie in Charcoal is available for checkout. Please review your product, color and size.'
+        "Only the H/77 Essential Hoodie in Charcoal, " +
+        "priced at EGP 700, is currently available. " +
+        "Please review your cart."
       );
-      return;
-    }
-
-    if (!Number.isFinite(product.price) || product.price !== 700) {
-      alert('This product price is not configured for checkout.');
       return;
     }
   }
 
-  const customerName = prompt('Enter your full name:');
+  const customerName = prompt("Enter your full name:");
   if (customerName === null) return;
 
-  const phone = prompt('Enter your phone number:');
+  const phone = prompt("Enter your phone number:");
   if (phone === null) return;
 
-  const address = prompt('Enter your full delivery address:');
+  const address = prompt("Enter your full delivery address:");
   if (address === null) return;
 
   if (
@@ -247,29 +291,30 @@ async function checkout() {
     phone.trim().length < 7 ||
     address.trim().length < 5
   ) {
-    alert('Please enter a valid name, phone number and delivery address.');
+    alert("Please enter a valid name, phone number and address.");
     return;
   }
 
-  const button = document.getElementById('checkoutButton');
-
+  const button = document.getElementById("checkoutButton");
   if (button) {
     button.disabled = true;
-    button.textContent = 'PROCESSING...';
+    button.textContent = "PROCESSING...";
   }
 
   const submittedKeys = [];
   const orderIds = [];
 
+  const cartKey = item =>
+    `${item.id}|${item.color || ""}|${item.size || ""}`;
+
   try {
-    // Each cart line is sent as a separate order.
     for (const item of cart) {
       const product = getProduct(item.id);
 
-      const response = await fetch('/api/create-order', {
-        method: 'POST',
+      const response = await fetch("/api/create-order", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           customer_name: customerName.trim(),
@@ -282,7 +327,7 @@ async function checkout() {
         })
       });
 
-      let result;
+      let result = null;
 
       try {
         result = await response.json();
@@ -302,28 +347,23 @@ async function checkout() {
       }
 
       orderIds.push(result.order_id);
-
-      submittedKeys.push(
-        `${item.id}|${item.color || ''}|${item.size || ''}`
-      );
+      submittedKeys.push(cartKey(item));
     }
 
-    // Clear the cart only after every line has been confirmed.
     saveCart([]);
     renderCart();
 
     alert(
-      `Order placed successfully!\nOrder ID(s): ${orderIds.join(', ')}\n\nOur team will contact you to confirm delivery.`
+      `Order placed successfully!\n` +
+      `Order ID(s): ${orderIds.join(", ")}\n\n` +
+      "Our team will contact you to confirm delivery."
     );
   } catch (error) {
-    // Keep only lines that were not successfully submitted.
+    // Remove confirmed lines only; preserve unconfirmed items.
     if (submittedKeys.length > 0) {
-      const remaining = getCart().filter(item => {
-        const key =
-          `${item.id}|${item.color || ''}|${item.size || ''}`;
-
-        return !submittedKeys.includes(key);
-      });
+      const remaining = getCart().filter(item =>
+        !submittedKeys.includes(cartKey(item))
+      );
 
       saveCart(remaining);
       renderCart();
@@ -331,47 +371,49 @@ async function checkout() {
 
     if (orderIds.length > 0) {
       alert(
-        `Some orders were saved successfully. Order ID(s): ${orderIds.join(', ')}.\n\nThe remaining items were not confirmed. Please check with us before trying again.\n\nError: ${error.message}`
+        `Some orders were saved successfully.\n` +
+        `Order ID(s): ${orderIds.join(", ")}\n\n` +
+        "Check with us before resubmitting the remaining items.\n" +
+        `Error: ${error.message}`
       );
     } else {
       alert(
-        `We could not confirm your order. Your cart has been kept.\n\n${error.message}`
+        "We could not confirm your order. Your cart has been kept.\n\n" +
+        error.message
       );
     }
   } finally {
-    const currentButton = document.getElementById('checkoutButton');
+    const currentButton = document.getElementById("checkoutButton");
 
     if (currentButton) {
       currentButton.disabled = false;
-      currentButton.textContent = 'CHECKOUT';
+      currentButton.textContent = "CHECKOUT";
     }
   }
 }
 
-function removeItem(id, color = '', size = '') {
+// Keep compatibility with any older page calling removeItem().
+function removeItem(id, color = "", size = "") {
   const cart = getCart();
 
   const index = cart.findIndex(item =>
     item.id === Number(id) &&
-    (item.color || '') === color &&
-    (item.size || '') === size
+    (item.color || "") === color &&
+    (item.size || "") === size
   );
 
   if (index !== -1) {
-    cart.splice(index, 1);
+    removeCartIndex(index);
   }
-
-  saveCart(cart);
-  renderCart();
 }
 
 updateCount();
-renderProducts('featuredProducts', 3);
-renderProducts('shopProducts');
+renderProducts("featuredProducts", 3);
+renderProducts("shopProducts");
 renderCart();
 
-document.querySelectorAll('.menu-btn').forEach(button => {
-  button.addEventListener('click', () => {
-    document.querySelector('.nav')?.classList.toggle('open');
+document.querySelectorAll(".menu-btn").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelector(".nav")?.classList.toggle("open");
   });
 });
